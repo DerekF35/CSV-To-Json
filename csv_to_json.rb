@@ -7,10 +7,12 @@ if ARGV.size != 2 && ARGV.size != 3
   exit
 end
  
-
-#STEP - loads files into array of hashes with first row being header  
 CSV::Converters[:blank_to_nil] = lambda do |field|
   field && field.empty? ? nil : field
+end
+
+CSV::Converters[:string] = lambda do |field|
+  field.to_s
 end
 
 if(ARGV.size == 3)
@@ -20,7 +22,12 @@ else
   paramkey = false
   data = []
 end
-CSV.foreach(ARGV[0], :row_sep => :auto, :headers => true,  :converters => [:all], :encoding=> "UTF-8") do |row|
+
+file=File.open(ARGV[0],"r")
+puts "#{file.readlines.size - 1} Records to convert"
+file.close
+
+CSV.foreach(ARGV[0], :row_sep => :auto, :headers => true, :unconverted_fields => true , :converters => [:string,:blank_to_nil], :encoding=> "UTF-8") do |row|
   new_hash = {}
   row.to_hash.each_pair do |k,v|
     new_hash.merge!({k.downcase => v.to_s}) 
@@ -35,3 +42,6 @@ end
 File.open(ARGV[1], 'w') do |f|
   f.puts JSON.pretty_generate(data )
 end
+
+puts "Conversion Complete!!"
+puts "#{data.size} records in JSON output"
